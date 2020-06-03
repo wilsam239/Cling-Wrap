@@ -1,8 +1,21 @@
 #include <iostream>
 #include <switch.h>
+#include <fstream>
 #include <filesystem>
 
+#include "fs.h"
+
 #define VERSION "0.0.1"
+
+#define BOOTLOADERPATH "bootloader"
+#define ALTBOOTLOADERPATH "_bootlader"
+
+#define KIPSPATH "atmosphere/kips"   
+#define ALTKIPSPATH "_kips"
+
+//extern FsFileSystem *fs;
+
+namespace fs = std::filesystem;
 
 void initServices(){
     consoleInit(NULL);
@@ -39,6 +52,8 @@ void viewMain() {
 int main(int argc, char* argv[]) {
     initServices();
     viewMain();
+    bool renameBootloader = false;
+    bool renameKips = false;
 
     while (appletMainLoop()) {
         hidScanInput();
@@ -46,11 +61,101 @@ int main(int argc, char* argv[]) {
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
 
         if (kDown & KEY_A) {
-            // rename files
+            fs::path p = fs::current_path();
+            if(!fs::exists(p/BOOTLOADERPATH) && !fs::exists(p/ALTBOOTLOADERPATH)) {
+                std::cout << "bootloader path not found" << std::endl;
+                renameBootloader = false;
+                fs::create_directories(p/BOOTLOADERPATH);
+            }
+
+            if(!fs::exists(p/KIPSPATH) && !fs::exists(p/ALTKIPSPATH)) {
+                std::cout << "kips path not found" << std::endl;
+                renameKips = false;
+                fs::create_directories(p/KIPSPATH);
+            }
+
+            if(fs::exists(p/ALTBOOTLOADERPATH) && !fs::exists(p/BOOTLOADERPATH)) {
+                std::cout << "bootloader already renamed for tinfoil" << std::endl;
+                renameBootloader = false;
+            }
+
+            if(!fs::exists(p/ALTBOOTLOADERPATH) && fs::exists(p/BOOTLOADERPATH)) {
+                std::cout << "bootloader not yet renamed for tinfoil" << std::endl;
+                renameBootloader = true;
+            }
+
+            if(fs::exists(p/ALTKIPSPATH) && !fs::exists(p/KIPSPATH)) {
+                std::cout << "kips already renamed for tinfoil" << std::endl;
+                renameKips = false;
+            }
+
+            if(!fs::exists(p/ALTKIPSPATH) && fs::exists(p/KIPSPATH)) {
+                std::cout << "kips not yet renamed for tinfoil" << std::endl;
+                renameKips = true;
+            }
+
+            if(renameBootloader) {
+                fs::rename(p/BOOTLOADERPATH, p/ALTBOOTLOADERPATH);
+                std::cout << "Successfully renamed bootloader directory." << std::endl;
+            }
+
+            if(renameKips) {
+                fs::rename(p/KIPSPATH, p/ALTKIPSPATH);
+                std::cout << "Successfully renamed kips directory." << std::endl;
+            }
+            
+            if(!renameKips && !renameBootloader) {
+                std::cout << "No directories need to be renamed for tinfoil" << std::endl;
+            }
         }
 
         if (kDown & KEY_B) {
-            //restore files
+            fs::path p = fs::current_path();
+            if(!fs::exists(p/BOOTLOADERPATH) && !fs::exists(p/ALTBOOTLOADERPATH)) {
+                std::cout << "bootloader path not found" << std::endl;
+                renameBootloader = false;
+                fs::create_directories(p/BOOTLOADERPATH);
+            }
+
+            if(!fs::exists(p/KIPSPATH) && !fs::exists(p/ALTKIPSPATH)) {
+                std::cout << "kips path not found" << std::endl;
+                renameKips = false;
+                fs::create_directories(p/KIPSPATH);
+            }
+
+            if(!fs::exists(p/ALTBOOTLOADERPATH) && fs::exists(p/BOOTLOADERPATH)) {
+                std::cout << "bootloader already renamed for hekate" << std::endl;
+                renameBootloader = false;
+            }
+
+            if(fs::exists(p/ALTBOOTLOADERPATH) && !fs::exists(p/BOOTLOADERPATH)) {
+                std::cout << "bootloader not yet renamed for hekate" << std::endl;
+                renameBootloader = true;
+            }
+
+            if(!fs::exists(p/ALTKIPSPATH) && fs::exists(p/KIPSPATH)) {
+                std::cout << "kips already renamed for hekate" << std::endl;
+                renameKips = false;
+            }
+
+            if(fs::exists(p/ALTKIPSPATH) && !fs::exists(p/KIPSPATH)) {
+                std::cout << "kips not yet renamed for hekate" << std::endl;
+                renameKips = true;
+            }
+
+            if(renameBootloader) {
+                fs::rename(p/ALTBOOTLOADERPATH, p/BOOTLOADERPATH);
+                std::cout << "Successfully renamed bootloader directory." << std::endl;
+            }
+
+            if(renameKips) {
+                fs::rename(p/ALTKIPSPATH, p/KIPSPATH);
+                std::cout << "Successfully renamed kips directory." << std::endl;
+            }
+            
+            if(!renameKips && !renameBootloader) {
+                std::cout << "No directories need to be renamed for hekate" << std::endl;
+            }
         }
 
         if (kDown & KEY_PLUS)
