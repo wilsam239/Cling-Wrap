@@ -33,7 +33,7 @@ void exitServices(){
 
 void viewHeader() {
     std::cout << "\033[31m" << "================================================================================" << "\033[0m" << std::endl;
-    std::cout << "\033[1;31m" << "Tinfoil Workaround v" << VERSION << " by  Acta" << "\033[0m" <<std::endl;
+    std::cout << "\033[1;31m" << "Cling Wrap v" << VERSION << " by  Acta" << "\033[0m" <<std::endl;
     std::cout << "\033[31m" << "================================================================================" << "\033[0m" << std::endl;
     std::cout << std::endl;
 }
@@ -59,9 +59,9 @@ int main(int argc, char* argv[]) {
         hidScanInput();
 
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        fs::path p = "switch/Tinfoil-Workaround";
 
         if (kDown & KEY_A) {
-            fs::path p = fs::current_path();
             if(!fs::exists(p/BOOTLOADERPATH) && !fs::exists(p/ALTBOOTLOADERPATH)) {
                 std::cout << "bootloader path not found" << std::endl;
                 renameBootloader = false;
@@ -110,7 +110,6 @@ int main(int argc, char* argv[]) {
         }
 
         if (kDown & KEY_B) {
-            fs::path p = fs::current_path();
             if(!fs::exists(p/BOOTLOADERPATH) && !fs::exists(p/ALTBOOTLOADERPATH)) {
                 std::cout << "bootloader path not found" << std::endl;
                 renameBootloader = false;
