@@ -1,11 +1,12 @@
-/*#include <stdio.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 
-#include "fs.h"
+#include <common.h>
+#include <fs.h>
 
-bool FS_FileExists(FsFileSystem *fs, const char *path) {
+/*bool FS_FileExists(FsFileSystem *fs, const char *path) {
 	FsFile file;
 
 	char temp_path[FS_MAX_PATH];
@@ -17,7 +18,7 @@ bool FS_FileExists(FsFileSystem *fs, const char *path) {
 	}
 
 	return false;
-}
+}*/
 
 bool FS_DirExists(FsFileSystem *fs, const char *path) {
 	FsDir dir;
@@ -32,7 +33,7 @@ bool FS_DirExists(FsFileSystem *fs, const char *path) {
 
 	return false;
 }
-
+/*
 Result FS_MakeDir(FsFileSystem *fs, const char *path) {
 	Result ret = 0;
 
@@ -358,5 +359,5 @@ char *FS_GetFilePermission(const char *filename) {
 		(attr.st_mode & S_IWOTH) ? "w" : "-", (attr.st_mode & S_IXOTH) ? "x" : "-");
 
 	return perms;
-}
-*/
+}*/
+

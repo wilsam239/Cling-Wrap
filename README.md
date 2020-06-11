@@ -12,3 +12,4 @@ In the event that the app crashes during use, be sure to rename the files manual
 ## Credits
 - KiteAffair for the name suggestion
 - NX-Shell for the filesystem code
+
