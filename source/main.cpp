@@ -1,7 +1,7 @@
 #include <iostream>
 #include <switch.h>
 #include <fstream>
-//#include <filesystem>
+
 #include <string.h>
 #include <chrono>
 #include <ctime>
@@ -35,22 +35,19 @@ Result FS_RenameDir(FsFileSystem *fs, const char *old_dirname, const char *new_d
 bool tinfoilReady();
 void clearConsole();
 
+
 void initServices(){
     consoleInit(NULL);
-    //ncmInitialize();
     nsInitialize();
     writeToLog("ns Initialised");
     devices[0] = *fsdevGetDeviceFileSystem("sdmc");
     writeToLog("devices[0] set to sdmc");
 	fs = &devices[0];
     writeToLog("fs set to devices[0]");
-    //socketInitializeDefault();
 }
 
 void exitServices(){
-    //socketExit();
     nsExit();
-    //ncmExit();
     consoleExit(NULL);
 }
 
@@ -92,6 +89,10 @@ void writeToLog(std::string msg) {
     logFile.close();
 }
 
+/**
+ * FS_DirExists
+ * Checks if the given path exists as a directory
+**/
 bool FS_DirExists(FsFileSystem *fs, const char *path) {
 	FsDir dir;
     writeToLog("Initialised dir");
@@ -109,6 +110,10 @@ bool FS_DirExists(FsFileSystem *fs, const char *path) {
 	return false;
 }
 
+/**
+ * FS_RenameDir
+ * Renames the old_dirname to new_dirname
+**/
 Result FS_RenameDir(FsFileSystem *fs, const char *old_dirname, const char *new_dirname) {
 	Result ret = 0;
 
@@ -127,6 +132,10 @@ Result FS_RenameDir(FsFileSystem *fs, const char *old_dirname, const char *new_d
 	return 0;
 }
 
+/**
+ * tinfoilReady
+ * Checks if the device is tinfoil ready by checking the folders tinfoil searches for
+**/
 bool tinfoilReady() {
     writeToLog("Checking if /bootloader or /_bootloader exists.");
     if(FS_DirExists(fs, BOOTLOADERPATH)) {
@@ -151,13 +160,20 @@ void clearConsole() {
 }
 
 int main(int argc, char* argv[]) {
+    // Initialise services
     initServices();
+
+    // View the main console output
     viewMain();
+
     // char p[500] = "/switch/Cling-Wrap/";
+
+    // Create char arrays for the old and new paths of files that need to be renamed
     char oldPath[500], newPath[500];
 
     while (appletMainLoop()) {
         hidScanInput();
+        // Reset the old and new path char arrays
         memset(oldPath, 0, 500);
         memset(newPath, 0, 500);
         //strcat(oldPath, p);
@@ -165,7 +181,8 @@ int main(int argc, char* argv[]) {
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
 
         if (kDown & KEY_A) {
-
+            
+            // Set the old and new path's according to the devices tinfoilReady status
             if(tinfoilReady()) {
                 writeToLog("Determined that the folder is currently /_bootloader and therefore ready for tinfoil use.");
                 strcat(oldPath, ALTBOOTLOADERPATH);
@@ -178,18 +195,12 @@ int main(int argc, char* argv[]) {
                 writeToLog("Prepared old and new path strings.");
             }
             
+            // Rename the directories
             if(FS_RenameDir(fs, oldPath, newPath) == 0) {
                 writeToLog("Renaming successful.");
+                // Reload the console to show the new status
                 clearConsole();
                 viewMain();
-                /*
-                std::cout << "Renaming has been successful." << std::endl;
-
-                if(tinfoilReady()) {
-                    std::cout << "New status: " << "\033[0;32m" << "Tinfoil Ready" << "\033[0m" << std::endl;
-                } else {
-                    std::cout << "New status: " << "\033[31m" << "Not Tinfoil Ready" << "\033[0m" << std::endl;
-                }*/
 
             } else {
                 std::cout << "An error occured during renaming. Check the log file for details: /switch/Cling-Wrap/log.txt" << std::endl;

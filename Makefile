@@ -45,7 +45,7 @@ INCLUDES	:=	include
 #ROMFS		:=	romfs
 APP_TITLE   :=  Cling Wrap
 APP_AUTHOR  :=  Acta
-APP_VERSION :=  0.0.1
+APP_VERSION :=  1.0.0
 
 #---------------------------------------------------------------------------------
 # options for code generation
