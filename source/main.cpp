@@ -10,7 +10,7 @@
 //#include <fs.h>
 //#include <common.h>
 
-#define VERSION "0.0.2"
+#define VERSION "1.0.0"
 
 #define LOGFILE "/switch/Cling-Wrap/log.txt"
 
@@ -33,6 +33,7 @@ void writeToLog(std::string msg);
 bool FS_DirExists(FsFileSystem *fs, const char *path);
 Result FS_RenameDir(FsFileSystem *fs, const char *old_dirname, const char *new_dirname);
 bool tinfoilReady();
+void clearConsole();
 
 void initServices(){
     consoleInit(NULL);
@@ -144,10 +145,15 @@ bool tinfoilReady() {
     return false;
 }
 
+void clearConsole() {
+    consoleClear();
+    consoleUpdate(NULL);
+}
+
 int main(int argc, char* argv[]) {
     initServices();
     viewMain();
-    char p[500] = "/switch/Cling-Wrap/";
+    // char p[500] = "/switch/Cling-Wrap/";
     char oldPath[500], newPath[500];
 
     while (appletMainLoop()) {
@@ -174,13 +180,16 @@ int main(int argc, char* argv[]) {
             
             if(FS_RenameDir(fs, oldPath, newPath) == 0) {
                 writeToLog("Renaming successful.");
+                clearConsole();
+                viewMain();
+                /*
                 std::cout << "Renaming has been successful." << std::endl;
 
                 if(tinfoilReady()) {
                     std::cout << "New status: " << "\033[0;32m" << "Tinfoil Ready" << "\033[0m" << std::endl;
                 } else {
                     std::cout << "New status: " << "\033[31m" << "Not Tinfoil Ready" << "\033[0m" << std::endl;
-                }
+                }*/
 
             } else {
                 std::cout << "An error occured during renaming. Check the log file for details: /switch/Cling-Wrap/log.txt" << std::endl;
