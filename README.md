@@ -12,9 +12,9 @@ Tinfoil looks through your switch's files for specific folders that are used by 
 
 After renaming, it is important to run the program again to rename the files so that hekate can boot them again.
 
-Specifically, it renames the `bootloader` folder.
+Specifically, it renames the `bootloader` and `atmosphere/kips/` folder if they are present.
 
-In the event that the app crashes during use, be sure to rename the files manually by inserting your SD card into a computer. Also be sure to upload your log.txt file (found in the Cling Wrap nro folder) as an issue on GitHub.
+In the event that the app crashes during use, be sure to rename the files manually by inserting your SD card into a computer or by booting fusee primary and using goldleaf. Also be sure to upload your log.txt file (found in the Cling Wrap nro folder) as an issue on GitHub.
 
 ## How to install
 Copy the `Cling-Wrap/` directory to `/switch/` in your sdcard
