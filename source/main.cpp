@@ -1,42 +1,89 @@
 #include <iostream>
 #include <switch.h>
 #include <fstream>
+#include <filesystem>
+#include <list>
 
 #include <string.h>
 #include <chrono>
 #include <ctime>
 #include <sstream>
 
-//#include <fs.h>
-//#include <common.h>
-
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 
 #define LOGFILE "/switch/Cling-Wrap/log.txt"
 
-#define BOOTLOADERPATH "/bootloader"
-#define ALTBOOTLOADERPATH "/_bootloader"
-
-#define KIPSPATH "/atmosphere/kips"   
-#define ALTKIPSPATH "/atmosphere/_kips"
-
-//namespace fs = std::filesystem;
+namespace nxfs = std::filesystem;
 
 FsFileSystem *fs;
 FsFileSystem devices[4];
 
+struct directory {
+    std::string dirName;
+    nxfs::path dirPath;
+    nxfs::path altPath;
+
+    std::string getName() {
+        return dirName;
+    }
+    const std::string getPath() {
+        return dirPath;
+    }
+    std::string getAltPath() {
+        return altPath;
+    }
+};
+
+
+std::list<directory> directoryItems;
+
+// Status Descriptions and unicode glyphs
+constexpr const char *const descriptions[4] = {
+    [0] = "Unwrapped",
+    [1] = "Wrapped",
+    [2] = "Both are Present",
+    [3] = "Neither are Present",    
+};
+
+enum status {
+    unwrapped = 0,
+    wrapped = 1,
+    bothPresent = 2,
+    neitherPresent = 3
+};
+
+// Paths for files tinfoil looks for and their respective alternate paths for Cling Wrap
+constexpr const char *const paths[2][2] = {
+    [0] = {
+        [0] = "/bootloader",
+        [1] = "/_bootloader",
+    },
+    [1] = {
+        [0] = "/atmosphere/kips",
+        [1] = "/atmosphere/_kips"
+    },
+};
+
+status startupStatus;
+
 void initService();
 void exitServices();
+void renameAll(status s);
 void viewHeader();
 void viewMain();
 void writeToLog(std::string msg);
 bool FS_DirExists(FsFileSystem *fs, const char *path);
 Result FS_RenameDir(FsFileSystem *fs, const char *old_dirname, const char *new_dirname);
-bool tinfoilReady();
+status tinfoilReady();
 void clearConsole();
-
+status getStatus(const directory &dir);
 
 void initServices(){
+    // Reset the log file
+    std::ofstream ofs;
+    ofs.open(LOGFILE, std::ofstream::out | std::ofstream::trunc);
+    ofs.close();
+
     consoleInit(NULL);
     nsInitialize();
     writeToLog("ns Initialised");
@@ -44,6 +91,28 @@ void initServices(){
     writeToLog("devices[0] set to sdmc");
 	fs = &devices[0];
     writeToLog("fs set to devices[0]");
+
+    // Loop through the list of possible paths
+    for(int i = 0; i < (int) (sizeof(paths)/sizeof(paths[0])); i++) {
+        // Declare the mainPath variable (the unaltered path)
+        // Also declare the alt path variable
+        const char *mainPath = paths[i][0];
+        const char *alt = paths[i][1];
+        // If either directory is present, continue
+        if(FS_DirExists(fs, mainPath) || FS_DirExists(fs, alt)) {
+            // Create a new directory for the current directory that is found
+            directory currentDir = {
+                .dirName = mainPath + 1,
+                .dirPath = mainPath,
+                .altPath = alt
+            };
+
+            // Add the current directory to the list of directory items
+            directoryItems.push_back(std::move(currentDir));
+        }
+    }
+
+    startupStatus = tinfoilReady();
 }
 
 void exitServices(){
@@ -55,25 +124,27 @@ void viewHeader() {
     std::cout << "\033[31m" << "================================================================================" << "\033[0m" << std::endl;
     std::cout << "\033[1;31m" << "Cling Wrap v" << VERSION << " by  Acta" << "\033[0m" <<std::endl;
     std::cout << "\033[31m" << "================================================================================" << "\033[0m" << std::endl;
-    std::cout << std::endl;
+    std::cout << "Wrapped = Files are ready for Tinfoil" << std::endl;
+    std::cout << "Unwrapped = Files are ready for Hekate/Kosmos" << std::endl;
+    std::cout << "\033[31m" << "================================================================================" << "\033[0m" << std::endl;
+
     writeToLog("Header output");
 }
 
 void viewMain() {
     viewHeader();
-
-    if(tinfoilReady()) {
-        std::cout << "Current status: " << "\033[0;32m" << "Tinfoil Ready" << "\033[0m" << std::endl;
+    status ready = tinfoilReady();
+    std::cout << "Current status: " << "\033[0;32m" << descriptions[ready] << "\033[0m" << std::endl;
+        
+    if (ready == status::wrapped || ready == status::unwrapped) {
+        std::cout << "Press [A] to rename files" << std::endl;
     } else {
-        std::cout << "Current status: " << "\033[31m" << "Not Tinfoil Ready" << "\033[0m" << std::endl;
+        std::cout << "It is not safe to continue..." << std::endl;
     }
-    
-    std::cout << "Press [A] to rename files" << std::endl;
 
     std::cout << "Press [+] to quit" << std::endl << std::endl;
 
     consoleUpdate(NULL);
-    writeToLog("Body output");
 }
 
 void writeToLog(std::string msg) {
@@ -136,22 +207,52 @@ Result FS_RenameDir(FsFileSystem *fs, const char *old_dirname, const char *new_d
  * tinfoilReady
  * Checks if the device is tinfoil ready by checking the folders tinfoil searches for
 **/
-bool tinfoilReady() {
-    writeToLog("Checking if /bootloader or /_bootloader exists.");
-    if(FS_DirExists(fs, BOOTLOADERPATH)) {
-        writeToLog("/bootloader path exists");
-        return false;
-    } else if (FS_DirExists(fs, ALTBOOTLOADERPATH)) {
-        writeToLog("/_bootloader path exists");
-        return true;
+status tinfoilReady() {
+    
+    status readyPaths[directoryItems.size()];
+    std::stringstream logMsg;
+    int i = 0;
+
+    // Loop through the list of possible paths
+    if(directoryItems.size() == 0) {
+        return status::neitherPresent;
     } else {
-        std::string err = "Error: No Bootloader folder or alternative folder found... It is not safe to proceed";
-        std::cout << err << std::endl;
-        writeToLog(err);
-        exitServices();
-        return 0;
+        for (const auto &dir : directoryItems) {
+            logMsg << "Checking " << dir.dirName;
+            writeToLog(logMsg.str());                
+            readyPaths[i] = getStatus(dir);
+            i++;
+        }
     }
-    return false;
+    
+    for(int j = 0; j < (int) (sizeof(readyPaths)/sizeof(readyPaths[0])); j++) {
+        if(readyPaths[j] == status::wrapped) {
+            // If wrapped, do nothing
+        } else {
+            return readyPaths[j];
+        }
+    }
+    // If the end of the loop is reached, it must be entirely wrapped
+    return status::wrapped;
+}
+
+status getStatus(const directory &dir) {
+    const char *path = dir.dirPath.c_str();
+    const char *alt = dir.altPath.c_str();
+
+    if(FS_DirExists(fs, path) && FS_DirExists(fs, alt)) {
+        // Both directories are found
+        return status::bothPresent;
+    } else {
+        if(FS_DirExists(fs, path)) {
+            return status::unwrapped;
+        } else if(FS_DirExists(fs, alt)) {
+            return status::wrapped;
+        } else {
+            // No directories are found
+            return status::neitherPresent;
+        }
+    }    
 }
 
 void clearConsole() {
@@ -180,33 +281,23 @@ int main(int argc, char* argv[]) {
         //strcat(newPath, p);
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
 
-        if (kDown & KEY_A) {
-            
-            // Set the old and new path's according to the devices tinfoilReady status
-            if(tinfoilReady()) {
-                writeToLog("Determined that the folder is currently /_bootloader and therefore ready for tinfoil use.");
-                strcat(oldPath, ALTBOOTLOADERPATH);
-                strcat(newPath, BOOTLOADERPATH);
-                writeToLog("Prepared old and new path strings.");
-            } else {
-                writeToLog("Determined that the folder is currently /bootloader and therefore not ready for tinfoil use.");
-                strcat(oldPath, BOOTLOADERPATH);
-                strcat(newPath, ALTBOOTLOADERPATH);
-                writeToLog("Prepared old and new path strings.");
-            }
-            
-            // Rename the directories
-            if(FS_RenameDir(fs, oldPath, newPath) == 0) {
-                writeToLog("Renaming successful.");
+        if (startupStatus == status::wrapped || startupStatus == status::unwrapped) {
+            if (kDown & KEY_A) {                        
+                // Set the old and new path's according to the devices tinfoilReady status
+                if(tinfoilReady() == status::wrapped) {
+                    writeToLog("Determined that the folders are currently wrapped and therefore ready for tinfoil use.");
+                    renameAll(status::unwrapped);
+                } else if(tinfoilReady() == status::unwrapped) {
+                    writeToLog("Determined that the folders are currently unwrapped and therefore not ready for tinfoil use.");                            
+                    renameAll(status::wrapped);
+                }
                 // Reload the console to show the new status
                 clearConsole();
                 viewMain();
-
-            } else {
-                std::cout << "An error occured during renaming. Check the log file for details: /switch/Cling-Wrap/log.txt" << std::endl;
+                consoleUpdate(NULL);
             }
-            consoleUpdate(NULL);
         }
+        
 
         if (kDown & KEY_PLUS)
             break;
@@ -214,4 +305,53 @@ int main(int argc, char* argv[]) {
 
     exitServices();
     return 0;
+}
+
+// Rename a directory
+void rename(const int pathIndex) {
+    // Get the path variables
+    const char *path = paths[pathIndex][0];
+    const char *alt = paths[pathIndex][1];
+    
+    if(FS_DirExists(fs, path) && FS_DirExists(fs, alt)) {
+        // Both directories are found
+    } else {
+        if(FS_DirExists(fs, path)) {
+            if(FS_RenameDir(fs, path, alt) == 0) {
+                // Success
+            }
+        } else if(FS_DirExists(fs, alt)) {
+            if(FS_RenameDir(fs, alt, path) == 0) {
+                // Success
+            }
+        } else {
+            // No directories are found
+        }
+    }    
+}
+
+// Rename all folders so that they are in the s status
+void renameAll(status s) {
+    // wrapped = alt path present
+    // unwrapped = path present
+
+    // Loop through the list of possible paths
+    for (const auto &dir : directoryItems) {
+        // Get the path variables
+        const char *path = dir.dirPath.c_str();
+        const char *alt = dir.altPath.c_str();
+        if(s == status::wrapped) {
+            if(FS_DirExists(fs, path) && !FS_DirExists(fs, alt)) {
+                if(FS_RenameDir(fs, path, alt) == 0) {
+                    // Success
+                }
+            }
+        } else if (s == status::unwrapped) {
+            if(FS_DirExists(fs, alt) && !FS_DirExists(fs, path)) {
+                if(FS_RenameDir(fs, alt, path) == 0) {
+                    // Success
+                }
+            }
+        }
+    }
 }
