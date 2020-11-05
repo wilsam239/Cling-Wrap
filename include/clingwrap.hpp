@@ -39,7 +39,7 @@ enum status {
 constexpr const char *const paths[2][2] = {
     [0] = {
         [0] = "/bootloader",
-        [1] = "/_bootloader",
+        [1] = "/autism_speaks",
     },
     [1] = {
         [0] = "/atmosphere/kips",
