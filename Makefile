@@ -63,7 +63,7 @@ CXXFLAGS	:= $(CFLAGS) -fexceptions -std=gnu++17 -Wno-reorder
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lnx -lz -lmbedtls -lmbedx509 -lmbedcrypto -lstdc++fs `freetype-config --libs`
+LIBS	:= -lnx -lz -lmbedtls -lmbedx509 -lmbedcrypto -lstdc++fs `freetype-config --libs` 
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
