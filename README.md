@@ -1,8 +1,12 @@
-# Cling Wrap
+# Cling Wrap (Deprecated - See Below)
 <p align="center">
 <img src = "https://user-images.githubusercontent.com/11286118/84357080-6e643c00-ac08-11ea-9435-19f116d0477e.png"\><br>
 <img alt="GitHub All Releases" src="https://img.shields.io/github/downloads/wilsam239/Cling-Wrap/total">
 </p>
+
+## A few versions of Tinfoil ago, the developer removed the checks that this overlay snuck around. It is no longer necessary to use this tool.
+
+<strike>
 A Nintendo Switch homebrew app to enable Tinfoil to be run on devices with hekate (without the custom fork) by renaming folders that Tinfoil looks for on your SD card so that it can be run.
 
 **It is important to run the software before and after using Tinfoil, as not running it after using Tinfoil will result in Hekate failing to launch.**
@@ -24,6 +28,7 @@ Copy the `Cling-Wrap/` directory to `/switch/` in your sdcard
 
 ![Not Ready](https://user-images.githubusercontent.com/11286118/84357073-6d330f00-ac08-11ea-9f66-f910660eef05.jpg)
 
+  </strike>
 ## Thanks
 - KiteAffair for the name suggestion
 - NX-Shell for their filesystem code
